@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIGenTest - 智能测试方案协作平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 自定义企业蓝主题 */
+        :root {
+            --primary-blue: #1890ff;
+            --primary-blue-light: #40a9ff;
+            --primary-blue-dark: #096dd9;
+            --background-gray: #f5f5f5;
+            --border-gray: #e8e8e8;
+            --text-gray: #666;
+            --success-green: #52c41a;
+        }
+        
+        .enterprise-blue {
+            background-color: var(--primary-blue);
+        }
+        
+        .enterprise-blue-light {
+            background-color: var(--primary-blue-light);
+        }
+        
+        .enterprise-blue-dark {
+            background-color: var(--primary-blue-dark);
+        }
+
+        /* 脉冲动画效果 */
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .bg-enterprise {
+            background-color: var(--background-gray);
+        }
+        
+        .border-enterprise {
+            border-color: var(--border-gray);
+        }
+        
+        /* 消息气泡样式 */
+        .message-bubble-user {
+            background: linear-gradient(135deg, #95ec69, #52c41a);
+            border-radius: 18px 4px 18px 18px;
+        }
+        
+        .message-bubble-ai {
+            background: white;
+            border-radius: 4px 18px 18px 18px;
+            border: 1px solid var(--border-gray);
+        }
+        
+        .message-bubble-system {
+            background: #f0f0f0;
+            border-radius: 12px;
+        }
+        
+        /* 动画效果 */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .bounce {
+            animation: bounce 0.6s infinite alternate;
+        }
+        
+        @keyframes bounce {
+            to { transform: translateY(-3px); }
+        }
+        
+        .typing-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-gray);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-indicator:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* 增强滚动条样式 */
+        .custom-scrollbar {
+            scroll-behavior: smooth;
+            scroll-padding-top: 20px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #c1c1c1, #d1d1d1);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #a8a8a8, #b8b8b8);
+            transform: scale(1.1);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:active {
+            background: linear-gradient(45deg, #888, #999);
+        }
+        
+        /* 移动端滚动优化 */
+        .custom-scrollbar {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        
+        /* 滚动指示器 */
+        .scroll-indicator {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(24, 144, 255, 0.1);
+            border-radius: 20px;
+            padding: 8px 4px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .scroll-indicator.show {
+            opacity: 1;
+        }
+        
+        .scroll-indicator .indicator-bar {
+            width: 3px;
+            height: 60px;
+            background: rgba(24, 144, 255, 0.3);
+            border-radius: 2px;
+            position: relative;
+        }
+        
+        .scroll-indicator .indicator-thumb {
+            position: absolute;
+            width: 100%;
+            background: var(--primary-blue);
+            border-radius: 2px;
+            transition: all 0.2s ease;
+        }
+        
+        /* 滚动按钮 */
+        .scroll-nav-btn {
+            position: absolute;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(24, 144, 255, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .scroll-nav-btn:hover {
+            background: var(--primary-blue-dark);
+            transform: scale(1.1);
+        }
+        
+        .scroll-nav-btn.show {
+            opacity: 1;
+        }
+        
+        .scroll-to-top {
+            top: 20px;
+        }
+        
+        .scroll-to-bottom {
+            bottom: 20px;
+        }
+        
+        /* 新消息指示器 */
+        .new-message-indicator {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary-blue);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 2px 12px rgba(24, 144, 255, 0.3);
+        }
+        
+        .new-message-indicator.show {
+            opacity: 1;
+        }
+        
+        .new-message-indicator:hover {
+            background: var(--primary-blue-dark);
+            transform: translateX(-50%) translateY(-2px);
+        }
+        
+        /* 消息容器增强 */
+        .messages-wrapper {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+            height: 100%;
+            min-height: 0; /* 重要：允许flex子元素缩小 */
+        }
+        
+        /* 修复消息容器的高度问题 */
+        .messages-container {
+            height: 100%;
+            max-height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* 确保主容器有正确的高度 */
+        .main-container {
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* 修复flex容器的滚动问题 */
+        .flex-1.min-h-0 {
+            min-height: 0;
+            flex: 1 1 0%;
+        }
+        
+        /* 调试用边框（可选） */
+        .messages-wrapper {
+            /* border: 2px solid red; */ /* 调试时取消注释 */
+        }
+        
+        .messages-container {
+            /* border: 2px solid blue; */ /* 调试时取消注释 */
+        }
+        
+        /* 滚动区域高亮 */
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #999, #aaa);
+        }
+        
+        /* 键盘导航提示 */
+        .keyboard-hint {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .keyboard-hint.show {
+            opacity: 1;
+        }
+        
+        /* 专家头像样式 */
+        .expert-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .expert-online {
+            position: relative;
+        }
+        
+        .expert-online::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background: var(--success-green);
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+        
+        /* 会话列表项样式 */
+        .conversation-item {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+        
+        .conversation-item:hover {
+            background-color: #f0f7ff;
+            transform: translateX(2px);
+        }
+        
+        .conversation-item.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        
+        /* 按钮动画 */
+        .btn-enterprise {
+            background: var(--primary-blue);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-enterprise:hover {
+            background: var(--primary-blue-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+        }
+        
+        /* 侧边栏展开动画 */
+        .sidebar-transition {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 报告面板样式 */
+        .report-panel {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .report-panel.show {
+            transform: translateX(0);
+        }
+        
+        /* 输入框焦点样式 */
+        .input-focus:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-enterprise h-screen overflow-hidden">
+    <!-- 主容器 -->
+    <div class="flex h-full main-container">
+        <!-- 左侧边栏 -->
+        <div id="sidebar" class="w-80 bg-white border-r border-enterprise flex flex-col sidebar-transition">
+            <!-- 顶部标题栏 -->
+            <div class="h-16 enterprise-blue flex items-center justify-between px-4 text-white">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-robot text-xl"></i>
+                    <span class="font-bold text-lg">AIGenTest</span>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="configBtn" class="p-2 hover:bg-blue-600 rounded-lg transition-colors" title="系统配置">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button id="addProjectBtn" class="p-2 hover:bg-blue-600 rounded-lg transition-colors" title="新建项目">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 搜索栏 -->
+            <div class="p-4 border-b border-enterprise">
+                <div class="relative">
+                    <input type="text" id="searchConversations" 
+                           placeholder="搜索项目..." 
+                           class="w-full pl-10 pr-4 py-2 border border-enterprise rounded-lg input-focus outline-none">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+            
+            <!-- 会话列表 -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar">
+                <div id="conversationList" class="p-2">
+                    <!-- 会话项将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <!-- 底部状态栏 -->
+            <div class="p-4 border-t border-enterprise bg-gray-50">
+                <div class="flex items-center space-x-2 text-sm text-gray-600">
+                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span>AI专家团队在线</span>
+                    <span id="expertCount" class="font-bold text-blue-600">7</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主聊天区域 -->
+        <div class="flex-1 flex flex-col">
+            <!-- 聊天头部 -->
+            <div id="chatHeader" class="h-16 bg-white border-b border-enterprise flex items-center justify-between px-6">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-project-diagram text-blue-600"></i>
+                        </div>
+                        <div>
+                            <h2 id="currentProjectTitle" class="font-bold text-gray-800">欢迎使用AIGenTest</h2>
+                            <p class="text-sm text-gray-500">智能测试方案协作平台</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button id="viewReportBtn" class="hidden px-4 py-2 btn-enterprise text-white rounded-lg hover:shadow-lg transition-all">
+                        <i class="fas fa-file-alt mr-2"></i>查看报告
+                    </button>
+                    <button id="downloadReportBtn" class="hidden px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all">
+                        <i class="fas fa-download mr-2"></i>下载方案
+                    </button>
+                    <button id="addExpertBtn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all">
+                        <i class="fas fa-user-plus mr-2"></i>添加专家
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 聊天消息区域 -->
+            <div class="flex-1 flex min-h-0">
+                <!-- 消息列表 -->
+                <div class="flex-1 flex flex-col min-h-0">
+                    <div class="messages-wrapper">
+                        <div id="messagesContainer" class="messages-container custom-scrollbar p-6 space-y-4">
+                            <!-- 欢迎消息 -->
+                            <div class="text-center py-8">
+                                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-robot text-2xl text-blue-600"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-800 mb-2">欢迎使用AIGenTest</h3>
+                                <p class="text-gray-600 mb-4">智能测试方案协作平台，让AI专家团队为您生成专业的测试方案</p>
+                                <div class="flex flex-col space-y-3">
+                                    <button id="startFirstProject" class="px-6 py-3 btn-enterprise text-white rounded-lg hover:shadow-lg transition-all">
+                                        <i class="fas fa-rocket mr-2"></i>开始第一个项目
+                                    </button>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 滚动导航按钮 -->
+                        <button id="scrollToTop" class="scroll-nav-btn scroll-to-top" title="回到顶部 (Home)">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                        <button id="scrollToBottom" class="scroll-nav-btn scroll-to-bottom" title="滚动到底部 (End)">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        
+                        <!-- 滚动指示器 -->
+                        <div id="scrollIndicator" class="scroll-indicator">
+                            <div class="indicator-bar">
+                                <div id="indicatorThumb" class="indicator-thumb"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 新消息指示器 -->
+                        <div id="newMessageIndicator" class="new-message-indicator">
+                            <i class="fas fa-arrow-down mr-2"></i>
+                            <span id="newMessageCount">1</span> 条新消息
+                        </div>
+                        
+                        <!-- 键盘快捷键提示 -->
+                        <div id="keyboardHint" class="keyboard-hint">
+                            Home/End: 顶部/底部 | ↑↓: 滚动 | PgUp/PgDn: 翻页
+                        </div>
+                    </div>
+                    
+                    <!-- 输入区域 -->
+                    <div id="inputArea" class="border-t border-enterprise bg-white p-4">
+                        <div class="flex items-end space-x-3">
+                            <div class="flex-1">
+                                <textarea id="messageInput" 
+                                        placeholder="请描述您的测试需求..." 
+                                        class="w-full p-3 border border-enterprise rounded-lg input-focus outline-none resize-none"
+                                        rows="3"></textarea>
+                            </div>
+                            <div class="flex flex-col space-y-2">
+                                <button id="sendBtn" class="w-12 h-12 btn-enterprise text-white rounded-lg hover:shadow-lg transition-all">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                <button id="attachBtn" class="w-12 h-12 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 快捷操作 -->
+                        <div class="flex items-center justify-between mt-3">
+                            <div class="flex space-x-2">
+                                <button id="mentionExpertBtn" class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors">
+                                    <i class="fas fa-at mr-1"></i>@专家
+                                </button>
+                                <button id="emojiBtn" class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors">
+                                    <i class="fas fa-smile mr-1"></i>表情
+                                </button>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                按 Enter 发送，Shift + Enter 换行
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 报告面板 -->
+                <div id="reportPanel" class="w-96 bg-white border-l border-enterprise report-panel">
+                    <div class="h-full flex flex-col">
+                        <!-- 报告头部 -->
+                        <div class="h-16 border-b border-enterprise flex items-center justify-between px-4">
+                            <h3 class="font-bold text-gray-800">测试方案报告</h3>
+                            <button id="closeReportBtn" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 报告内容 -->
+                        <div id="reportContent" class="flex-1 overflow-y-auto custom-scrollbar p-4">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-file-alt text-4xl mb-4"></i>
+                                <p>开始对话后将自动生成测试方案报告</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 报告操作 -->
+                        <div class="border-t border-enterprise p-4 space-y-2">
+                            <button data-action="export-pdf" class="w-full px-4 py-2 btn-enterprise text-white rounded-lg hover:shadow-lg transition-all">
+                                <i class="fas fa-file-pdf mr-2"></i>导出PDF
+                            </button>
+                            <button data-action="export-word" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all">
+                                <i class="fas fa-file-word mr-2"></i>导出Word
+                            </button>
+                            <button data-action="share" class="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all">
+                                <i class="fas fa-share mr-2"></i>分享链接
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 配置模态框 -->
+    <div id="configModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden">
+            <!-- 配置头部 -->
+            <div class="h-16 enterprise-blue text-white flex items-center justify-between px-6">
+                <h3 class="text-xl font-bold">系统配置</h3>
+                <button id="closeConfigBtn" class="p-2 hover:bg-blue-600 rounded-lg transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- 配置内容 -->
+            <div class="flex h-96">
+                <!-- 配置导航 -->
+                <div class="w-48 bg-gray-50 border-r border-enterprise">
+                    <nav class="p-4 space-y-2">
+                        <button class="config-nav-btn w-full text-left px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors active" data-tab="api">
+                            <i class="fas fa-key mr-2"></i>API设置
+                        </button>
+                        <button class="config-nav-btn w-full text-left px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors" data-tab="experts">
+                            <i class="fas fa-users mr-2"></i>专家管理
+                        </button>
+                        <button class="config-nav-btn w-full text-left px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors" data-tab="search">
+                            <i class="fas fa-search mr-2"></i>搜索配置
+                        </button>
+                        <button class="config-nav-btn w-full text-left px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors" data-tab="data">
+                            <i class="fas fa-database mr-2"></i>数据管理
+                        </button>
+                        <button class="config-nav-btn w-full text-left px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors" data-tab="security">
+                            <i class="fas fa-shield-alt mr-2"></i>安全防护
+                        </button>
+                    </nav>
+                </div>
+                
+                <!-- 配置面板 -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <div id="configContent" class="p-6">
+                        <!-- 配置内容将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 专家思考详情模态框 -->
+    <div id="thinkingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
+            <div class="h-16 bg-gray-800 text-white flex items-center justify-between px-6">
+                <h3 class="text-xl font-bold">
+                    <i class="fas fa-brain mr-2"></i>专家思考过程
+                </h3>
+                <button id="closeThinkingBtn" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="thinkingContent" class="p-6 overflow-y-auto custom-scrollbar max-h-96">
+                <!-- 思考内容将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 加载指示器 -->
+    <div id="loadingIndicator" class="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 hidden">
+        <div class="flex items-center space-x-3">
+            <div class="flex space-x-1">
+                <div class="typing-indicator"></div>
+                <div class="typing-indicator"></div>
+                <div class="typing-indicator"></div>
+            </div>
+            <span class="text-gray-600">AI专家正在思考...</span>
+        </div>
+    </div>
+    
+    <!-- @专家选择弹窗 -->
+    <div id="mentionExpertModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-96 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-medium text-gray-900">选择专家</h3>
+                        <button id="closeMentionModal" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="mb-4">
+                        <input type="text" id="expertSearch" placeholder="搜索专家..." 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div id="expertList" class="space-y-2 max-h-64 overflow-y-auto">
+                        <!-- 专家列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 表情选择面板 -->
+    <div id="emojiPanel" class="absolute bottom-16 left-4 bg-white rounded-lg shadow-xl border border-gray-200 hidden z-40 w-80">
+        <div class="p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="font-medium text-gray-900">选择表情</h4>
+                <button id="closeEmojiPanel" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-8 gap-2 text-xl">
+                <!-- 常用表情 -->
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="😀">😀</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="😂">😂</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🤔">🤔</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="👍">👍</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="👎">👎</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="❤️">❤️</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🎉">🎉</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🔥">🔥</button>
+                
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="😊">😊</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="😍">😍</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🤨">🤨</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="😎">😎</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🤗">🤗</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="💡">💡</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="⚡">⚡</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="✨">✨</button>
+                
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="😭">😭</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="😤">😤</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="😱">😱</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="😴">😴</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🙄">🙄</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="💪">💪</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🚀">🚀</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="✅">✅</button>
+                
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="❌">❌</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="⚠️">⚠️</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="📋">📋</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="📝">📝</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🔧">🔧</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🐛">🐛</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🎯">🎯</button>
+                <button class="emoji-btn hover:bg-gray-100 p-2 rounded transition-colors" data-emoji="🔍">🔍</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript文件 -->
+    <script src="js/security.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/experts.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/reports.js"></script>
+    <script src="js/mention-emoji.js"></script>
+    
+    <script>
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', function() {
+            // 统一由App管理所有系统的初始化
+            App.init();
+        });
+    </script>
+</body>
+</html>
