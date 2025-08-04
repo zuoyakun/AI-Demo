@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>排序算法可视化演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bar {
+            transition: all 0.3s ease;
+        }
+        .bar.comparing {
+            background-color: #ef4444 !important;
+        }
+        .bar.sorted {
+            background-color: #10b981 !important;
+        }
+        .bar.pivot {
+            background-color: #f59e0b !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- 标题 -->
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">排序算法可视化演示</h1>
+        
+        <!-- 控制面板 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <!-- 算法选择 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">选择算法</label>
+                    <select id="algorithmSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="bubble">冒泡排序</option>
+                        <option value="selection">选择排序</option>
+                        <option value="insertion">插入排序</option>
+                        <option value="quick">快速排序</option>
+                        <option value="merge">归并排序</option>
+                    </select>
+                </div>
+                
+                <!-- 数组大小 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">数组大小</label>
+                    <input type="range" id="sizeSlider" min="10" max="100" value="30" class="w-full">
+                    <span id="sizeValue" class="text-sm text-gray-600">30</span>
+                </div>
+                
+                <!-- 排序速度 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">排序速度</label>
+                    <input type="range" id="speedSlider" min="1" max="10" value="5" class="w-full">
+                    <span id="speedValue" class="text-sm text-gray-600">中等</span>
+                </div>
+                
+                <!-- 控制按钮 -->
+                <div class="flex flex-col gap-2">
+                    <button id="generateBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">生成新数组</button>
+                    <button id="sortBtn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">开始排序</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 算法信息 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div id="algorithmInfo">
+                <h3 class="text-xl font-semibold mb-4">冒泡排序</h3>
+                <p class="text-gray-700 mb-2"><strong>原理：</strong>重复遍历数组，比较相邻元素并交换位置，使较大元素逐渐"冒泡"到数组末尾。</p>
+                <p class="text-gray-700 mb-2"><strong>时间复杂度：</strong>最好 O(n)，平均 O(n²)，最坏 O(n²)</p>
+                <p class="text-gray-700"><strong>空间复杂度：</strong>O(1)</p>
+            </div>
+        </div>
+        
+        <!-- 可视化区域 -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h3 class="text-xl font-semibold mb-4">排序过程可视化</h3>
+            <div id="visualizer" class="flex items-end justify-center h-80 bg-gray-50 rounded"></div>
+            <div class="mt-4 flex justify-center gap-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-blue-500"></div>
+                    <span>未排序</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-red-500"></div>
+                    <span>正在比较</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-yellow-500"></div>
+                    <span>基准元素</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-green-500"></div>
+                    <span>已排序</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 统计信息 -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-xl font-semibold mb-4">排序统计</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div id="comparisons" class="text-2xl font-bold text-blue-600">0</div>
+                    <div class="text-sm text-gray-600">比较次数</div>
+                </div>
+                <div class="text-center">
+                    <div id="swaps" class="text-2xl font-bold text-red-600">0</div>
+                    <div class="text-sm text-gray-600">交换次数</div>
+                </div>
+                <div class="text-center">
+                    <div id="time" class="text-2xl font-bold text-green-600">0</div>
+                    <div class="text-sm text-gray-600">时间 (ms)</div>
+                </div>
+                <div class="text-center">
+                    <div id="status" class="text-2xl font-bold text-purple-600">就绪</div>
+                    <div class="text-sm text-gray-600">状态</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SortingVisualizer {
+            constructor() {
+                this.array = [];
+                this.size = 30;
+                this.speed = 100;
+                this.isRunning = false;
+                this.comparisons = 0;
+                this.swaps = 0;
+                this.startTime = 0;
+                
+                this.initializeElements();
+                this.initializeEventListeners();
+                this.generateNewArray();
+                this.updateAlgorithmInfo();
+            }
+            
+            initializeElements() {
+                this.visualizer = document.getElementById('visualizer');
+                this.algorithmSelect = document.getElementById('algorithmSelect');
+                this.sizeSlider = document.getElementById('sizeSlider');
+                this.speedSlider = document.getElementById('speedSlider');
+                this.generateBtn = document.getElementById('generateBtn');
+                this.sortBtn = document.getElementById('sortBtn');
+                this.sizeValue = document.getElementById('sizeValue');
+                this.speedValue = document.getElementById('speedValue');
+                this.comparisonsEl = document.getElementById('comparisons');
+                this.swapsEl = document.getElementById('swaps');
+                this.timeEl = document.getElementById('time');
+                this.statusEl = document.getElementById('status');
+                this.algorithmInfo = document.getElementById('algorithmInfo');
+            }
+            
+            initializeEventListeners() {
+                this.algorithmSelect.addEventListener('change', () => this.updateAlgorithmInfo());
+                this.sizeSlider.addEventListener('input', (e) => {
+                    this.size = parseInt(e.target.value);
+                    this.sizeValue.textContent = this.size;
+                    if (!this.isRunning) this.generateNewArray();
+                });
+                this.speedSlider.addEventListener('input', (e) => {
+                    const speeds = ['极慢', '很慢', '慢', '较慢', '中慢', '中等', '中快', '较快', '快', '极快'];
+                    this.speed = 1100 - parseInt(e.target.value) * 100;
+                    this.speedValue.textContent = speeds[parseInt(e.target.value) - 1];
+                });
+                this.generateBtn.addEventListener('click', () => {
+                    if (!this.isRunning) this.generateNewArray();
+                });
+                this.sortBtn.addEventListener('click', () => this.startSorting());
+            }
+            
+            generateNewArray() {
+                this.array = [];
+                for (let i = 0; i < this.size; i++) {
+                    this.array.push(Math.floor(Math.random() * 300) + 10);
+                }
+                this.resetStatistics();
+                this.renderArray();
+            }
+            
+            resetStatistics() {
+                this.comparisons = 0;
+                this.swaps = 0;
+                this.comparisonsEl.textContent = '0';
+                this.swapsEl.textContent = '0';
+                this.timeEl.textContent = '0';
+                this.statusEl.textContent = '就绪';
+            }
+            
+            renderArray() {
+                this.visualizer.innerHTML = '';
+                const containerWidth = this.visualizer.clientWidth;
+                const barWidth = (containerWidth - (this.size - 1) * 2) / this.size;
+                
+                this.array.forEach((value, index) => {
+                    const bar = document.createElement('div');
+                    bar.className = 'bar bg-blue-500 mx-0.5';
+                    bar.style.width = `${barWidth}px`;
+                    bar.style.height = `${value}px`;
+                    bar.dataset.index = index;
+                    this.visualizer.appendChild(bar);
+                });
+            }
+            
+            async startSorting() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.startTime = Date.now();
+                this.resetStatistics();
+                this.statusEl.textContent = '排序中...';
+                this.sortBtn.textContent = '排序中...';
+                this.sortBtn.disabled = true;
+                
+                const algorithm = this.algorithmSelect.value;
+                
+                try {
+                    switch (algorithm) {
+                        case 'bubble':
+                            await this.bubbleSort();
+                            break;
+                        case 'selection':
+                            await this.selectionSort();
+                            break;
+                        case 'insertion':
+                            await this.insertionSort();
+                            break;
+                        case 'quick':
+                            await this.quickSort(0, this.array.length - 1);
+                            break;
+                        case 'merge':
+                            await this.mergeSort(0, this.array.length - 1);
+                            break;
+                    }
+                    
+                    await this.markAllSorted();
+                    this.statusEl.textContent = '完成';
+                } catch (error) {
+                    console.error('排序过程出错:', error);
+                    this.statusEl.textContent = '错误';
+                }
+                
+                this.isRunning = false;
+                this.sortBtn.textContent = '开始排序';
+                this.sortBtn.disabled = false;
+                this.timeEl.textContent = Date.now() - this.startTime;
+            }
+            
+            async bubbleSort() {
+                const n = this.array.length;
+                for (let i = 0; i < n - 1; i++) {
+                    for (let j = 0; j < n - i - 1; j++) {
+                        await this.compare(j, j + 1);
+                        if (this.array[j] > this.array[j + 1]) {
+                            await this.swap(j, j + 1);
+                        }
+                        await this.clearComparing();
+                    }
+                    await this.markSorted(n - i - 1);
+                }
+            }
+            
+            async selectionSort() {
+                const n = this.array.length;
+                for (let i = 0; i < n - 1; i++) {
+                    let minIdx = i;
+                    await this.markPivot(i);
+                    
+                    for (let j = i + 1; j < n; j++) {
+                        await this.compare(minIdx, j);
+                        if (this.array[j] < this.array[minIdx]) {
+                            await this.clearPivot(minIdx);
+                            minIdx = j;
+                            await this.markPivot(minIdx);
+                        }
+                        await this.clearComparing();
+                    }
+                    
+                    if (minIdx !== i) {
+                        await this.swap(i, minIdx);
+                    }
+                    await this.clearPivot(minIdx);
+                    await this.markSorted(i);
+                }
+            }
+            
+            async insertionSort() {
+                for (let i = 1; i < this.array.length; i++) {
+                    let key = this.array[i];
+                    let j = i - 1;
+                    
+                    await this.markPivot(i);
+                    
+                    while (j >= 0) {
+                        await this.compare(j, j + 1);
+                        if (this.array[j] <= key) break;
+                        
+                        this.array[j + 1] = this.array[j];
+                        await this.updateBar(j + 1, this.array[j + 1]);
+                        this.swaps++;
+                        this.swapsEl.textContent = this.swaps;
+                        
+                        j--;
+                        await this.clearComparing();
+                    }
+                    
+                    this.array[j + 1] = key;
+                    await this.updateBar(j + 1, key);
+                    await this.clearPivot(i);
+                    await this.delay();
+                }
+            }
+            
+            async quickSort(low, high) {
+                if (low < high) {
+                    const pi = await this.partition(low, high);
+                    await this.quickSort(low, pi - 1);
+                    await this.quickSort(pi + 1, high);
+                }
+            }
+            
+            async partition(low, high) {
+                const pivot = this.array[high];
+                await this.markPivot(high);
+                let i = low - 1;
+                
+                for (let j = low; j < high; j++) {
+                    await this.compare(j, high);
+                    if (this.array[j] < pivot) {
+                        i++;
+                        if (i !== j) {
+                            await this.swap(i, j);
+                        }
+                    }
+                    await this.clearComparing();
+                }
+                
+                await this.swap(i + 1, high);
+                await this.clearPivot(high);
+                return i + 1;
+            }
+            
+            async mergeSort(left, right) {
+                if (left < right) {
+                    const mid = Math.floor((left + right) / 2);
+                    await this.mergeSort(left, mid);
+                    await this.mergeSort(mid + 1, right);
+                    await this.merge(left, mid, right);
+                }
+            }
+            
+            async merge(left, mid, right) {
+                const leftArr = this.array.slice(left, mid + 1);
+                const rightArr = this.array.slice(mid + 1, right + 1);
+                
+                let i = 0, j = 0, k = left;
+                
+                while (i < leftArr.length && j < rightArr.length) {
+                    await this.compare(left + i, mid + 1 + j);
+                    this.comparisons++;
+                    this.comparisonsEl.textContent = this.comparisons;
+                    
+                    if (leftArr[i] <= rightArr[j]) {
+                        this.array[k] = leftArr[i];
+                        await this.updateBar(k, leftArr[i]);
+                        i++;
+                    } else {
+                        this.array[k] = rightArr[j];
+                        await this.updateBar(k, rightArr[j]);
+                        j++;
+                    }
+                    k++;
+                    await this.clearComparing();
+                    await this.delay();
+                }
+                
+                while (i < leftArr.length) {
+                    this.array[k] = leftArr[i];
+                    await this.updateBar(k, leftArr[i]);
+                    i++;
+                    k++;
+                    await this.delay();
+                }
+                
+                while (j < rightArr.length) {
+                    this.array[k] = rightArr[j];
+                    await this.updateBar(k, rightArr[j]);
+                    j++;
+                    k++;
+                    await this.delay();
+                }
+            }
+            
+            async compare(i, j) {
+                this.comparisons++;
+                this.comparisonsEl.textContent = this.comparisons;
+                await this.markComparing(i, j);
+                await this.delay();
+            }
+            
+            async swap(i, j) {
+                [this.array[i], this.array[j]] = [this.array[j], this.array[i]];
+                this.swaps++;
+                this.swapsEl.textContent = this.swaps;
+                
+                await this.updateBar(i, this.array[i]);
+                await this.updateBar(j, this.array[j]);
+                await this.delay();
+            }
+            
+            async markComparing(i, j) {
+                const bars = this.visualizer.children;
+                if (bars[i]) bars[i].classList.add('comparing');
+                if (bars[j]) bars[j].classList.add('comparing');
+            }
+            
+            async clearComparing() {
+                const bars = this.visualizer.children;
+                for (let bar of bars) {
+                    bar.classList.remove('comparing');
+                }
+            }
+            
+            async markPivot(i) {
+                const bars = this.visualizer.children;
+                if (bars[i]) bars[i].classList.add('pivot');
+            }
+            
+            async clearPivot(i) {
+                const bars = this.visualizer.children;
+                if (bars[i]) bars[i].classList.remove('pivot');
+            }
+            
+            async markSorted(i) {
+                const bars = this.visualizer.children;
+                if (bars[i]) bars[i].classList.add('sorted');
+            }
+            
+            async markAllSorted() {
+                const bars = this.visualizer.children;
+                for (let i = 0; i < bars.length; i++) {
+                    bars[i].classList.add('sorted');
+                    await this.delay(50);
+                }
+            }
+            
+            async updateBar(index, value) {
+                const bar = this.visualizer.children[index];
+                if (bar) {
+                    bar.style.height = `${value}px`;
+                }
+            }
+            
+            delay(ms = this.speed) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            
+            updateAlgorithmInfo() {
+                const algorithm = this.algorithmSelect.value;
+                const info = {
+                    bubble: {
+                        name: '冒泡排序',
+                        principle: '重复遍历数组，比较相邻元素并交换位置，使较大元素逐渐"冒泡"到数组末尾。',
+                        timeComplexity: '最好 O(n)，平均 O(n²)，最坏 O(n²)',
+                        spaceComplexity: 'O(1)'
+                    },
+                    selection: {
+                        name: '选择排序',
+                        principle: '每次从未排序部分找到最小元素，将其放到已排序部分的末尾。',
+                        timeComplexity: '最好 O(n²)，平均 O(n²)，最坏 O(n²)',
+                        spaceComplexity: 'O(1)'
+                    },
+                    insertion: {
+                        name: '插入排序',
+                        principle: '构建有序序列，对于未排序数据，在已排序序列中从后向前扫描，找到相应位置并插入。',
+                        timeComplexity: '最好 O(n)，平均 O(n²)，最坏 O(n²)',
+                        spaceComplexity: 'O(1)'
+                    },
+                    quick: {
+                        name: '快速排序',
+                        principle: '选择一个基准元素，将数组分为两部分：小于基准的放左边，大于基准的放右边，然后递归排序。',
+                        timeComplexity: '最好 O(n log n)，平均 O(n log n)，最坏 O(n²)',
+                        spaceComplexity: 'O(log n)'
+                    },
+                    merge: {
+                        name: '归并排序',
+                        principle: '采用分治法，将数组分成两半分别排序，然后将结果合并。',
+                        timeComplexity: '最好 O(n log n)，平均 O(n log n)，最坏 O(n log n)',
+                        spaceComplexity: 'O(n)'
+                    }
+                };
+                
+                const current = info[algorithm];
+                this.algorithmInfo.innerHTML = `
+                    <h3 class="text-xl font-semibold mb-4">${current.name}</h3>
+                    <p class="text-gray-700 mb-2"><strong>原理：</strong>${current.principle}</p>
+                    <p class="text-gray-700 mb-2"><strong>时间复杂度：</strong>${current.timeComplexity}</p>
+                    <p class="text-gray-700"><strong>空间复杂度：</strong>${current.spaceComplexity}</p>
+                `;
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            new SortingVisualizer();
+        });
+    </script>
+</body>
+</html>
