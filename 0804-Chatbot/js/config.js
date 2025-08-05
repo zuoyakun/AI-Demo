@@ -36,8 +36,8 @@ window.ConfigSystem = {
     init() {
         console.log('⚙️ 初始化配置系统...');
         this.loadConfig();
-        this.bindEvents();
         this.renderConfigContent();
+        this.bindEvents(); // 在渲染完成后绑定事件
         console.log('✅ 配置系统初始化完成');
     },
 
@@ -83,11 +83,117 @@ window.ConfigSystem = {
 
     // 绑定事件
     bindEvents() {
-        // 配置导航按钮
+        // 统一的点击事件委托
         document.addEventListener('click', (e) => {
+            // 配置导航按钮
             if (e.target.classList.contains('config-nav-btn')) {
                 const tab = e.target.dataset.tab;
                 this.switchTab(tab);
+                return;
+            }
+
+            // 保存按钮
+            if (e.target.id === 'saveConfigBtn') {
+                this.saveAllChanges();
+                return;
+            }
+
+            // 添加专家按钮
+            if (e.target.id === 'addExpertBtn' || e.target.closest('#addExpertBtn')) {
+                e.preventDefault();
+                this.showAddExpertDialog();
+                return;
+            }
+
+            // API保存按钮
+            if (e.target.id === 'saveApiBtn') {
+                this.saveAPIConfig();
+                return;
+            }
+
+            // 搜索保存按钮
+            if (e.target.id === 'saveSearchBtn') {
+                this.saveSearchConfig();
+                return;
+            }
+
+            // 专家编辑按钮
+            if (e.target.classList.contains('edit-expert-btn') || e.target.closest('.edit-expert-btn')) {
+                const btn = e.target.closest('.edit-expert-btn') || e.target;
+                const expertId = btn.dataset.expertId;
+                if (expertId) {
+                    this.editExpert(expertId);
+                }
+                return;
+            }
+
+            // 专家删除按钮
+            if (e.target.classList.contains('delete-expert-btn') || e.target.closest('.delete-expert-btn')) {
+                const btn = e.target.closest('.delete-expert-btn') || e.target;
+                const expertId = btn.dataset.expertId;
+                if (expertId) {
+                    this.deleteExpert(expertId);
+                }
+                return;
+            }
+
+            // 数据导出按钮
+            if (e.target.id === 'exportDataBtn') {
+                if (window.App && window.App.exportAllData) {
+                    window.App.exportAllData();
+                }
+                return;
+            }
+
+            // 数据导入按钮
+            if (e.target.id === 'importDataBtn') {
+                const importInput = document.getElementById('importDataInput');
+                if (importInput) {
+                    importInput.click();
+                }
+                return;
+            }
+
+            // 清理数据按钮
+            if (e.target.id === 'cleanupDataBtn') {
+                const cleanupDays = document.getElementById('cleanupDays')?.value || 30;
+                const dayText = cleanupDays + '天';
+                
+                if (confirm(`确定要删除 ${dayText} 前的所有项目吗？此操作无法撤销。`)) {
+                    if (window.App && window.App.cleanupOldDataByDays) {
+                        const deletedCount = window.App.cleanupOldDataByDays(parseInt(cleanupDays));
+                        window.App.showNotification(`已删除 ${deletedCount} 个旧项目`, 'success');
+                        // 重新渲染配置内容以更新存储信息
+                        if (this.state.currentTab === 'data') {
+                            this.renderConfigContent();
+                        }
+                    }
+                }
+                return;
+            }
+
+            // 重置数据按钮
+            if (e.target.id === 'resetDataBtn') {
+                if (confirm('⚠️ 确定要重置所有数据吗？这将清除所有会话记录、专家设置和应用数据，此操作无法撤销！')) {
+                    if (confirm('请再次确认：您真的要删除所有本地数据吗？')) {
+                        // 清除所有本地存储
+                        for (let key in localStorage) {
+                            if (key.startsWith('aigent_')) {
+                                localStorage.removeItem(key);
+                            }
+                        }
+                        
+                        // 重新加载页面
+                        window.location.reload();
+                    }
+                }
+                return;
+            }
+
+            // 测试搜索API按钮
+            if (e.target.id === 'testSearchBtn') {
+                this.testSearchAPI();
+                return;
             }
         });
 
@@ -98,10 +204,47 @@ window.ConfigSystem = {
             }
         });
 
-        // 保存按钮
-        document.addEventListener('click', (e) => {
-            if (e.target.id === 'saveConfigBtn') {
-                this.saveAllChanges();
+        // 数据导入文件选择和配置变更
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'importDataInput') {
+                const file = e.target.files[0];
+                if (file && window.App && window.App.importData) {
+                    window.App.importData(file);
+                    // 重新渲染配置内容以更新存储信息
+                    setTimeout(() => {
+                        if (this.state.currentTab === 'data') {
+                            this.renderConfigContent();
+                        }
+                    }, 1000);
+                }
+                // 清空文件输入
+                e.target.value = '';
+                return;
+            }
+
+            // 自动保存设置
+            if (e.target.id === 'autoSaveToggle') {
+                const preferences = { autoSave: e.target.checked };
+                if (window.App && window.App.saveUserPreferences) {
+                    window.App.saveUserPreferences(preferences);
+                }
+                return;
+            }
+
+            if (e.target.id === 'saveFrequency') {
+                const preferences = { saveFrequency: parseInt(e.target.value) };
+                if (window.App && window.App.saveUserPreferences) {
+                    window.App.saveUserPreferences(preferences);
+                }
+                return;
+            }
+
+            if (e.target.id === 'retentionDays') {
+                const preferences = { retentionDays: parseInt(e.target.value) };
+                if (window.App && window.App.saveUserPreferences) {
+                    window.App.saveUserPreferences(preferences);
+                }
+                return;
             }
         });
     },
@@ -502,145 +645,7 @@ window.ConfigSystem = {
         }
 
         // 搜索测试按钮
-        const testSearchBtn = document.getElementById('testSearchBtn');
-        if (testSearchBtn) {
-            testSearchBtn.addEventListener('click', () => this.testSearchAPI());
-        }
-
-        // 保存按钮
-        const saveApiBtn = document.getElementById('saveApiBtn');
-        if (saveApiBtn) {
-            saveApiBtn.addEventListener('click', () => this.saveAPIConfig());
-        }
-
-        const saveSearchBtn = document.getElementById('saveSearchBtn');
-        if (saveSearchBtn) {
-            saveSearchBtn.addEventListener('click', () => this.saveSearchConfig());
-        }
-
-        // 添加专家按钮
-        const addExpertBtn = document.getElementById('addExpertBtn');
-        if (addExpertBtn) {
-            addExpertBtn.addEventListener('click', () => this.showAddExpertDialog());
-        }
-
-        // 专家操作按钮
-        document.querySelectorAll('.edit-expert-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const expertId = e.target.closest('.edit-expert-btn').dataset.expertId;
-                this.editExpert(expertId);
-            });
-        });
-
-        document.querySelectorAll('.delete-expert-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const expertId = e.target.closest('.delete-expert-btn').dataset.expertId;
-                this.deleteExpert(expertId);
-            });
-        });
-
-        // 数据管理按钮
-        const exportDataBtn = document.getElementById('exportDataBtn');
-        if (exportDataBtn) {
-            exportDataBtn.addEventListener('click', () => {
-                if (window.App && window.App.exportAllData) {
-                    window.App.exportAllData();
-                }
-            });
-        }
-
-        const importDataBtn = document.getElementById('importDataBtn');
-        const importDataInput = document.getElementById('importDataInput');
-        if (importDataBtn && importDataInput) {
-            importDataBtn.addEventListener('click', () => {
-                importDataInput.click();
-            });
-            
-            importDataInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file && window.App && window.App.importData) {
-                    window.App.importData(file);
-                    // 重新渲染配置内容以更新存储信息
-                    setTimeout(() => {
-                        if (this.state.currentTab === 'data') {
-                            this.renderConfigContent();
-                        }
-                    }, 1000);
-                }
-                // 清空文件输入
-                e.target.value = '';
-            });
-        }
-
-        const cleanupDataBtn = document.getElementById('cleanupDataBtn');
-        if (cleanupDataBtn) {
-            cleanupDataBtn.addEventListener('click', () => {
-                const cleanupDays = document.getElementById('cleanupDays')?.value || 30;
-                const dayText = cleanupDays + '天';
-                
-                if (confirm(`确定要删除 ${dayText} 前的所有项目吗？此操作无法撤销。`)) {
-                    if (window.App && window.App.cleanupOldDataByDays) {
-                        const deletedCount = window.App.cleanupOldDataByDays(parseInt(cleanupDays));
-                        window.App.showNotification(`已删除 ${deletedCount} 个旧项目`, 'success');
-                        // 重新渲染配置内容以更新存储信息
-                        if (this.state.currentTab === 'data') {
-                            this.renderConfigContent();
-                        }
-                    }
-                }
-            });
-        }
-
-        const resetDataBtn = document.getElementById('resetDataBtn');
-        if (resetDataBtn) {
-            resetDataBtn.addEventListener('click', () => {
-                if (confirm('⚠️ 确定要重置所有数据吗？这将清除所有会话记录、专家设置和应用数据，此操作无法撤销！')) {
-                    if (confirm('请再次确认：您真的要删除所有本地数据吗？')) {
-                        // 清除所有本地存储
-                        for (let key in localStorage) {
-                            if (key.startsWith('aigent_')) {
-                                localStorage.removeItem(key);
-                            }
-                        }
-                        
-                        // 重新加载页面
-                        window.location.reload();
-                    }
-                }
-            });
-        }
-
-        // 自动保存设置
-        const autoSaveToggle = document.getElementById('autoSaveToggle');
-        const saveFrequency = document.getElementById('saveFrequency');
-        const retentionDays = document.getElementById('retentionDays');
-
-        if (autoSaveToggle) {
-            autoSaveToggle.addEventListener('change', (e) => {
-                const preferences = { autoSave: e.target.checked };
-                if (window.App && window.App.saveUserPreferences) {
-                    window.App.saveUserPreferences(preferences);
-                }
-            });
-        }
-
-        if (saveFrequency) {
-            saveFrequency.addEventListener('change', (e) => {
-                const preferences = { saveFrequency: parseInt(e.target.value) };
-                if (window.App && window.App.saveUserPreferences) {
-                    window.App.saveUserPreferences(preferences);
-                }
-            });
-        }
-
-        if (retentionDays) {
-            retentionDays.addEventListener('change', (e) => {
-                const preferences = { retentionDays: parseInt(e.target.value) };
-                if (window.App && window.App.saveUserPreferences) {
-                    window.App.saveUserPreferences(preferences);
-                }
-            });
-        }
+        // 注意：所有按钮点击事件和输入变更事件现在通过事件委托在 bindEvents() 中统一处理
 
         // 项目列表控制
         const toggleProjectList = document.getElementById('toggleProjectList');
