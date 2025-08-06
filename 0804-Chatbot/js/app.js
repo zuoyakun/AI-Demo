@@ -122,7 +122,10 @@ window.App = {
             // 报告面板相关
             reportPanel: document.getElementById('reportPanel'),
             closeReportBtn: document.getElementById('closeReportBtn'),
+        backToChatBtn: document.getElementById('backToChatBtn'),
             reportContent: document.getElementById('reportContent'),
+            chatOverlay: document.getElementById('chatOverlay'),
+            floatingReportBtn: document.getElementById('floatingReportBtn'),
             
             // 其他
             loadingIndicator: document.getElementById('loadingIndicator')
@@ -133,9 +136,13 @@ window.App = {
     initializeModules() {
         // 初始化专家系统
         if (window.ExpertSystem) {
+            console.log('✅ ExpertSystem存在，开始初始化...');
             ExpertSystem.init();
-            this.state.experts = ExpertSystem.getDefaultExperts();
+            this.state.experts = ExpertSystem.getAllExperts();
             this.updateExpertCount();
+            console.log('✅ ExpertSystem初始化完成，专家数量:', this.state.experts.length);
+        } else {
+            console.error('❌ ExpertSystem不存在，无法初始化');
         }
 
         // 初始化聊天系统
@@ -196,7 +203,10 @@ window.App = {
         // 报告面板
         this.elements.viewReportBtn?.addEventListener('click', () => this.toggleReportPanel());
         this.elements.closeReportBtn?.addEventListener('click', () => this.closeReportPanel());
+        this.elements.backToChatBtn?.addEventListener('click', () => this.closeReportPanel());
         this.elements.downloadReportBtn?.addEventListener('click', () => this.downloadReport());
+        this.elements.chatOverlay?.addEventListener('click', () => this.closeReportPanel());
+        this.elements.floatingReportBtn?.addEventListener('click', () => this.toggleReportPanel());
 
         // 搜索会话
         this.elements.searchConversations?.addEventListener('input', (e) => this.searchConversations(e.target.value));
@@ -344,6 +354,11 @@ window.App = {
         
         // 添加淡入动画
         messageElement.classList.add('fade-in');
+        
+        // 如果是AI消息，更新浮动报告按钮状态
+        if (message.type === 'ai' || message.type === 'assistant') {
+            setTimeout(() => this.updateFloatingReportButton(), 100);
+        }
     },
 
     // 创建消息元素
@@ -415,50 +430,108 @@ window.App = {
         // 首先高亮@专家提及
         let formattedContent = this.highlightMentions(content);
         
-        // 预处理：清理多余的空行
-        formattedContent = formattedContent.replace(/\n{3,}/g, '\n\n');
+        // 使用统一的markdown处理逻辑
+        if (window.ReportSystem && window.ReportSystem.formatMarkdownContent) {
+            return window.ReportSystem.formatMarkdownContent(formattedContent);
+        }
+        
+        // 回退到简化版本（如果ReportSystem不可用）
+        return this.formatMarkdownContentFallback(formattedContent);
+    },
+
+    // 简化版markdown格式化（回退方案）
+    formatMarkdownContentFallback(content) {
+        // 预处理：清理多余的空行和统一换行符
+        content = content.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
         
         // 分行处理markdown
-        const lines = formattedContent.split('\n');
+        const lines = content.split('\n');
         const processedLines = [];
+        let inList = false;
         
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i].trim();
             
             if (!line) {
-                // 空行转换为段落间距
-                processedLines.push('<div class="my-3"></div>');
+                // 空行处理
+                if (inList) {
+                    processedLines.push('</div>'); // 结束列表容器
+                    inList = false;
+                }
+                processedLines.push('<div class="my-4"></div>');
                 continue;
             }
             
-            // 处理标题
-            if (line.startsWith('####')) {
-                line = `<h4 class="text-lg font-semibold text-gray-800 mt-4 mb-2">${line.replace(/^#{4}\s*/, '')}</h4>`;
-            } else if (line.startsWith('###')) {
-                line = `<h3 class="text-xl font-bold text-blue-800 mt-6 mb-3">${line.replace(/^#{3}\s*/, '')}</h3>`;
-            } else if (line.startsWith('##')) {
-                line = `<h2 class="text-2xl font-bold text-blue-900 mt-8 mb-4">${line.replace(/^#{2}\s*/, '')}</h2>`;
-            } else if (line.startsWith('#')) {
-                line = `<h1 class="text-3xl font-bold text-blue-900 mt-8 mb-6">${line.replace(/^#{1}\s*/, '')}</h1>`;
+            // 处理标题 - 统一层级和样式
+            if (line.match(/^#{4,}\s/)) {
+                // 四级及以上标题统一为四级
+                const title = line.replace(/^#{4,}\s*/, '');
+                line = `<h4 class="text-base font-semibold text-gray-800 mt-4 mb-2 flex items-center">
+                    <span class="w-1 h-4 bg-blue-500 mr-2 flex-shrink-0"></span>${title}
+                </h4>`;
+                if (inList) {
+                    processedLines.push('</div>');
+                    inList = false;
+                }
+            } else if (line.match(/^#{3}\s/)) {
+                const title = line.replace(/^#{3}\s*/, '');
+                line = `<h3 class="text-lg font-bold text-blue-700 mt-6 mb-3 border-l-4 border-blue-500 pl-3">${title}</h3>`;
+                if (inList) {
+                    processedLines.push('</div>');
+                    inList = false;
+                }
+            } else if (line.match(/^#{2}\s/)) {
+                const title = line.replace(/^#{2}\s*/, '');
+                line = `<h2 class="text-xl font-bold text-blue-800 mt-8 mb-4 border-b border-blue-300 pb-2">${title}</h2>`;
+                if (inList) {
+                    processedLines.push('</div>');
+                    inList = false;
+                }
+            } else if (line.match(/^#{1}\s/)) {
+                const title = line.replace(/^#{1}\s*/, '');
+                line = `<h1 class="text-2xl font-bold text-blue-900 mt-8 mb-6 bg-blue-50 p-3 rounded">${title}</h1>`;
+                if (inList) {
+                    processedLines.push('</div>');
+                    inList = false;
+                }
             }
             // 处理列表项
-            else if (line.startsWith('- ')) {
+            else if (line.match(/^-\s+/)) {
                 const listContent = line.replace(/^-\s*/, '');
                 const processedListContent = this.processInlineMarkdown(listContent);
-                line = `<div class="flex items-start mb-2 ml-4"><span class="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span><span class="flex-1">${processedListContent}</span></div>`;
+                
+                if (!inList) {
+                    processedLines.push('<div class="space-y-2 ml-4">');
+                    inList = true;
+                }
+                line = `<div class="flex items-start">
+                    <span class="inline-block w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                    <span class="flex-1 leading-relaxed">${processedListContent}</span>
+                </div>`;
             }
             // 处理普通段落
             else {
+                if (inList) {
+                    processedLines.push('</div>');
+                    inList = false;
+                }
+                
                 const processedText = this.processInlineMarkdown(line);
-                // 如果是分隔线
+                
+                // 检查是否是分隔线
                 if (line.match(/^-{3,}$/)) {
                     line = '<hr class="my-6 border-gray-300">';
                 } else {
-                    line = `<p class="mb-3 leading-relaxed">${processedText}</p>`;
+                    line = `<p class="mb-3 leading-relaxed text-gray-700">${processedText}</p>`;
                 }
             }
             
             processedLines.push(line);
+        }
+        
+        // 确保列表容器正确关闭
+        if (inList) {
+            processedLines.push('</div>');
         }
         
         return processedLines.join('');
@@ -518,6 +591,9 @@ window.App = {
         // 重置界面
         this.elements.currentProjectTitle.textContent = '新的测试项目';
         this.hideChatControls();
+        
+        // 隐藏浮动报告按钮
+        this.elements.floatingReportBtn?.classList.add('hidden');
         
         // 聚焦输入框
         this.elements.messageInput.focus();
@@ -788,6 +864,9 @@ window.App = {
         
         // 恢复该会话的测试报告
         this.restoreSessionReport(conversation.id);
+        
+        // 更新浮动报告按钮状态
+        setTimeout(() => this.updateFloatingReportButton(), 200);
     },
 
     // 恢复会话的测试报告
@@ -795,16 +874,28 @@ window.App = {
         if (window.ReportSystem) {
             const report = window.ReportSystem.loadReportFromStorage(conversationId);
             if (report) {
+                // 恢复报告状态
                 window.ReportSystem.state.currentReport = report;
+                window.ReportSystem.state.hasTestContent = true;
                 window.ReportSystem.renderReport(report);
                 console.log('📋 已恢复会话报告:', conversationId);
             } else {
-                // 清空当前报告显示
-                window.ReportSystem.state.currentReport = null;
-                if (window.ReportSystem.renderEmptyReport) {
-                    window.ReportSystem.renderEmptyReport();
+                // 检查当前会话是否包含测试内容
+                const currentConversation = this.state.conversations.find(conv => conv.id === conversationId);
+                if (currentConversation && window.ReportSystem.hasTestRelatedContent(currentConversation)) {
+                    // 如果包含测试内容但没有保存的报告，重新生成
+                    console.log('📋 检测到测试内容，重新生成报告...');
+                    window.ReportSystem.state.hasTestContent = true;
+                    window.ReportSystem.generateReport(currentConversation);
+                } else {
+                    // 清空当前报告显示
+                    window.ReportSystem.state.currentReport = null;
+                    window.ReportSystem.state.hasTestContent = false;
+                    if (window.ReportSystem.renderEmptyReport) {
+                        window.ReportSystem.renderEmptyReport();
+                    }
+                    console.log('📋 该会话暂无测试内容');
                 }
-                console.log('📋 该会话暂无保存的报告');
             }
         }
     },
@@ -1010,19 +1101,86 @@ window.App = {
     // 切换报告面板
     toggleReportPanel() {
         const panel = this.elements.reportPanel;
-        panel.classList.toggle('show');
+        const overlay = this.elements.chatOverlay;
+        const floatingBtn = this.elements.floatingReportBtn;
         
-        if (panel.classList.contains('show') && window.ReportSystem) {
-            ReportSystem.generateReport(this.state.currentConversation);
+        panel.classList.toggle('show');
+        overlay?.classList.toggle('show');
+        
+        // 隐藏浮动按钮当报告面板打开时
+        if (panel.classList.contains('show')) {
+            floatingBtn?.classList.add('hidden');
+            if (window.ReportSystem) {
+                ReportSystem.generateReport(this.state.currentConversation);
+            }
+        } else {
+            // 如果有测试内容，显示浮动按钮
+            if (this.hasTestContent()) {
+                floatingBtn?.classList.remove('hidden');
+            }
         }
     },
 
     // 关闭报告面板
     closeReportPanel() {
         this.elements.reportPanel?.classList.remove('show');
+        this.elements.chatOverlay?.classList.remove('show');
+        
+        // 显示浮动按钮（如果有测试内容）
+        if (this.hasTestContent()) {
+            this.elements.floatingReportBtn?.classList.remove('hidden');
+        }
+        
+        // 清除任何可能残留的导航元素
+        const oldNavElements = document.querySelectorAll('.fixed.top-20.right-4, .doubao-navigation-corner');
+        oldNavElements.forEach(nav => {
+            nav.remove();
+        });
     },
 
+    // 检查当前对话是否包含测试内容
+    hasTestContent() {
+        if (!this.state.currentConversation || !this.state.currentConversation.messages) {
+            return false;
+        }
+        
+        // 检查是否有AI消息且包含测试相关内容
+        const aiMessages = this.state.currentConversation.messages.filter(msg => msg.type === 'ai');
+        if (aiMessages.length === 0) {
+            return false;
+        }
+        
+        // 使用报告系统的判断逻辑
+        if (window.ReportSystem && typeof window.ReportSystem.shouldGenerateReport === 'function') {
+            return window.ReportSystem.shouldGenerateReport(this.state.currentConversation);
+        }
+        
+        // 简单的兜底判断
+        const allText = this.state.currentConversation.messages.map(msg => msg.content).join(' ');
+        const testKeywords = ['测试', '检测', '验证', '测试方案', '测试计划', '测试策略', '功能测试', '性能测试'];
+        return testKeywords.some(keyword => allText.includes(keyword));
+    },
 
+    // 更新浮动按钮状态
+    updateFloatingReportButton() {
+        const floatingBtn = this.elements.floatingReportBtn;
+        const reportPanel = this.elements.reportPanel;
+        
+        if (!floatingBtn) return;
+        
+        // 如果报告面板已开启，隐藏浮动按钮
+        if (reportPanel?.classList.contains('show')) {
+            floatingBtn.classList.add('hidden');
+            return;
+        }
+        
+        // 根据是否有测试内容显示/隐藏浮动按钮
+        if (this.hasTestContent()) {
+            floatingBtn.classList.remove('hidden');
+        } else {
+            floatingBtn.classList.add('hidden');
+        }
+    },
 
     // ==================== 本地存储功能 ====================
 
@@ -1685,14 +1843,26 @@ window.App = {
 
     // 键盘导航
     handleKeyboardNavigation(e) {
-        // 只在聊天区域焦点时处理
-        const container = this.elements.messagesContainer;
-        if (!container) return;
-
         // 检查是否在输入框中
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
             return;
         }
+
+        // 处理Escape键关闭模态框和面板
+        if (e.key === 'Escape') {
+            if (this.elements.reportPanel?.classList.contains('show')) {
+                this.closeReportPanel();
+                return;
+            }
+            if (this.elements.configModal?.classList.contains('flex')) {
+                this.closeConfig();
+                return;
+            }
+        }
+
+        // 只在聊天区域焦点时处理滚动
+        const container = this.elements.messagesContainer;
+        if (!container) return;
 
         const { scrollTop, scrollHeight, clientHeight } = container;
         

@@ -373,18 +373,203 @@
         
         /* 报告面板样式 */
         .report-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: calc(100vw - 320px); /* 100vw - 左侧栏宽度(w-80=320px) */
+            height: 100vh;
+            z-index: 50;
             transform: translateX(100%);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
         }
         
         .report-panel.show {
             transform: translateX(0);
+        }
+
+        /* 当报告面板显示时，聊天区域添加遮罩 */
+        .chat-overlay {
+            position: fixed;
+            top: 0;
+            left: 320px; /* 左侧栏宽度 */
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 40;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .chat-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .report-panel {
+                width: calc(100vw - 280px);
+            }
+            .chat-overlay {
+                left: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .report-panel {
+                width: 100vw;
+            }
+            .chat-overlay {
+                left: 0;
+            }
         }
         
         /* 输入框焦点样式 */
         .input-focus:focus {
             border-color: var(--primary-blue);
             box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+        }
+
+        /* 豆包风格报告样式 */
+        .doubao-report-container {
+            scroll-behavior: smooth;
+        }
+
+        .doubao-navigation {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* 右上角导航样式 */
+        .doubao-navigation-corner {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 200px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .doubao-navigation-corner:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 右上角导航的滚动条样式 */
+        .doubao-navigation-corner::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .doubao-navigation-corner::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .doubao-navigation-corner::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 2px;
+        }
+
+        .doubao-navigation-corner::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.8);
+        }
+
+        /* 确保导航在关闭报告面板时被清除 */
+        .report-panel:not(.show) .doubao-navigation-corner {
+            display: none;
+        }
+
+        /* 浮动报告按钮样式 */
+        .floating-report-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .floating-report-btn:hover {
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        .floating-report-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* 浮动按钮脉冲动画（有新内容时） */
+        .floating-report-btn.pulse {
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+            }
+            50% {
+                box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6), 0 0 0 8px rgba(59, 130, 246, 0.1);
+            }
+        }
+
+        /* 报告头部优化 */
+        .report-header-gradient {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+        }
+
+        .doubao-section {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .doubao-section:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .doubao-content {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .nav-link {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-link:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+        /* 渐入动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .doubao-section {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .doubao-section:nth-child(2) { animation-delay: 0.1s; }
+        .doubao-section:nth-child(3) { animation-delay: 0.2s; }
+        .doubao-section:nth-child(4) { animation-delay: 0.3s; }
+        .doubao-section:nth-child(5) { animation-delay: 0.4s; }
+        .doubao-section:nth-child(6) { animation-delay: 0.5s; }
+        .doubao-section:nth-child(7) { animation-delay: 0.6s; }
+
+        /* 背景渐变 */
+        .doubao-report-container {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+        }
+
+        /* 报告面板专门的样式调整 */
+        .report-panel .doubao-report-container {
+            padding: 0; /* 让豆包风格的容器自己控制padding */
         }
     </style>
 </head>
@@ -434,6 +619,16 @@
                     <span id="expertCount" class="font-bold text-blue-600">7</span>
                 </div>
             </div>
+        </div>
+        
+        <!-- 聊天遮罩层 -->
+        <div id="chatOverlay" class="chat-overlay"></div>
+        
+        <!-- 浮动报告切换按钮 -->
+        <div id="floatingReportBtn" class="fixed bottom-6 right-6 z-30 hidden">
+            <button class="floating-report-btn bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110" title="查看测试报告">
+                <i class="fas fa-file-alt text-lg"></i>
+            </button>
         </div>
         
         <!-- 主聊天区域 -->
@@ -551,18 +746,29 @@
                 </div>
                 
                 <!-- 报告面板 -->
-                <div id="reportPanel" class="w-96 bg-white border-l border-enterprise report-panel">
+                <div id="reportPanel" class="report-panel bg-white border-l border-enterprise">
                     <div class="h-full flex flex-col">
                         <!-- 报告头部 -->
-                        <div class="h-16 border-b border-enterprise flex items-center justify-between px-4">
-                            <h3 class="font-bold text-gray-800">测试方案报告</h3>
-                            <button id="closeReportBtn" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <i class="fas fa-times"></i>
-                            </button>
+                        <div class="h-16 border-b border-enterprise flex items-center justify-between px-4 bg-gradient-to-r from-blue-50 to-purple-50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-file-alt text-white text-sm"></i>
+                                </div>
+                                <h3 class="font-bold text-gray-800">测试方案报告</h3>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button id="backToChatBtn" class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors flex items-center space-x-1" title="返回交互页面">
+                                    <i class="fas fa-arrow-left text-xs"></i>
+                                    <span>返回对话</span>
+                                </button>
+                                <button id="closeReportBtn" class="p-2 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-lg transition-colors" title="关闭报告 (ESC)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- 报告内容 -->
-                        <div id="reportContent" class="flex-1 overflow-y-auto custom-scrollbar p-4">
+                        <div id="reportContent" class="flex-1 overflow-y-auto custom-scrollbar">
                             <div class="text-center py-8 text-gray-500">
                                 <i class="fas fa-file-alt text-4xl mb-4"></i>
                                 <p>开始对话后将自动生成测试方案报告</p>
@@ -570,7 +776,15 @@
                         </div>
                         
                         <!-- 报告操作 -->
-                        <div class="border-t border-enterprise p-4 space-y-2">
+                        <div class="border-t border-enterprise p-4 space-y-3">
+                            <!-- 快捷键提示 -->
+                            <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
+                                <div class="flex items-center justify-center">
+                                    <span><kbd class="bg-white px-1 py-0.5 rounded text-xs">ESC</kbd> 关闭报告</span>
+                                </div>
+                            </div>
+                            
+                            <!-- 操作按钮 -->
                             <button data-action="export-pdf" class="w-full px-4 py-2 btn-enterprise text-white rounded-lg hover:shadow-lg transition-all">
                                 <i class="fas fa-file-pdf mr-2"></i>导出PDF
                             </button>

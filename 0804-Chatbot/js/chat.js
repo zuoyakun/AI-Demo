@@ -550,10 +550,19 @@ window.ChatSystem = {
 
     // 为消息选择专家
     selectExpertsForMessage(message, intent, conversationType = {}) {
+        console.log('🔍 开始选择专家，消息:', message.content || message);
+        console.log('🔍 意图分析:', intent);
+        console.log('🔍 对话类型:', conversationType);
+        
         if (!window.ExpertSystem) {
             console.error('❌ ExpertSystem未初始化');
             return [];
         }
+        
+        // 检查ExpertSystem中的专家数量
+        const allAvailableExperts = window.ExpertSystem.getAllExperts();
+        console.log('📋 ExpertSystem中可用专家数量:', allAvailableExperts.length);
+        console.log('📋 可用专家列表:', allAvailableExperts.map(e => ({ id: e.id, name: e.name })));
 
         // 检查是否有@专家
         const mentionedExperts = conversationType.mentionedExperts || [];
@@ -566,7 +575,7 @@ window.ChatSystem = {
             
             // 如果被@的专家不足以覆盖任务复杂度，添加相关专家
             if (intent.complexity === 'high' && selectedExperts.length < 5) {
-                const allExperts = window.ExpertSystem.getAllExperts();
+                const allExperts = window.ExpertSystem?.getAllExperts() || [];
                 const additionalExperts = allExperts.filter(expert => 
                     !selectedExperts.some(selected => selected.id === expert.id)
                 ).slice(0, 5 - selectedExperts.length);
@@ -578,17 +587,20 @@ window.ChatSystem = {
         }
 
         // 没有@专家时，使用原有逻辑
-        let selectedExperts = window.ExpertSystem.selectExpertsForTask(message);
+        let selectedExperts = window.ExpertSystem?.selectExpertsForTask(message.content || message) || [];
 
         // 根据意图调整专家团队
         if (intent.complexity === 'high') {
             // 高复杂度项目需要所有专家
-            selectedExperts = window.ExpertSystem.getAllExperts();
+            selectedExperts = window.ExpertSystem?.getAllExperts() || [];
         } else if (intent.complexity === 'low') {
             // 低复杂度项目只需要核心专家
             selectedExperts = selectedExperts.slice(0, 3);
         }
 
+        console.log('✅ 最终选择的专家:', selectedExperts.map(e => ({ id: e.id, name: e.name })));
+        console.log('✅ 专家数量:', selectedExperts.length);
+        
         this.state.activeExperts = selectedExperts;
         return selectedExperts;
     },
@@ -1068,16 +1080,17 @@ ${context}
 - 后端：JUnit + Postman
 - 性能：JMeter + LoadRunner`,
             
-            'risk_controller': `### 风险控制专业建议
+            'risk_controller': `### 质量控制专业建议
 
-#### 风险识别
-- **技术风险**：架构复杂度、性能瓶颈、安全漏洞
-- **业务风险**：需求变更、数据丢失、用户体验
-- **流程风险**：时间紧张、资源不足、沟通问题
+#### 质量保证要点
+- **测试质量**：确保测试用例的全面性和有效性
+- **数据安全**：重点关注敏感数据的安全测试
+- **性能稳定**：监控系统在各种负载下的表现
+- **异常处理**：验证系统的异常情况处理能力
 
-#### 控制措施
-- 建立风险评估矩阵
-- 制定应急预案和回滚机制
+#### 质量控制措施
+- 建立测试质量检查点
+- 制定测试过程监控机制
 - 重点关注数据安全和系统稳定性测试`,
             
             'case_researcher': `### 案例研究专业建议
@@ -1092,17 +1105,17 @@ ${context}
 - 建立知识库和经验分享机制
 - 定期组织技术分享和培训`,
             
-            'cost_estimator': `### 成本评估专业建议
+            'efficiency_advisor': `### 效率优化专业建议
 
-#### 成本构成
-- **人力成本**：测试人员的工作量和时间投入
-- **工具成本**：测试工具的授权费用和维护成本
-- **培训成本**：团队技能提升的时间和资源投入
-- **基础设施**：测试环境和硬件设备成本
+#### 效率提升要点
+- **测试自动化**：识别适合自动化的测试场景
+- **工具选型**：选择高效的测试工具和框架
+- **流程优化**：精简测试流程，减少冗余环节
+- **并行执行**：合理安排测试任务的并行执行
 
 #### 优化策略
-- 制定分阶段实施计划控制风险
-- 评估自动化投入的长期收益`,
+- 建立测试效率监控指标
+- 推广测试最佳实践和标准化`,
             
             'solution_integrator': `### 方案整合专业建议
 
@@ -1113,7 +1126,7 @@ ${context}
 - **可扩展性**：为后续项目提供可复用的框架
 
 #### 实施路径
-- 制定详细的实施计划和时间表
+- 整合各专家建议形成完整方案
 - 建立反馈机制和持续改进流程`
         };
         

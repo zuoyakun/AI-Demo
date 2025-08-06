@@ -410,9 +410,27 @@ window.ConfigSystem = {
 
     // 渲染专家配置
     renderExpertsConfig() {
-        const experts = window.ExpertSystem?.getAllExperts() || [];
-        const defaultExperts = experts.filter(e => e.isDefault);
-        const customExperts = experts.filter(e => !e.isDefault);
+        console.log('🔍 渲染专家配置页面...');
+        
+        // 尝试获取专家数据
+        let experts = [];
+        let defaultExperts = [];
+        let customExperts = [];
+        
+        if (window.ExpertSystem && typeof window.ExpertSystem.getAllExperts === 'function') {
+            experts = window.ExpertSystem.getAllExperts() || [];
+            defaultExperts = experts.filter(e => e.isDefault);
+            customExperts = experts.filter(e => !e.isDefault);
+            console.log('📊 从ExpertSystem获取到专家数量:', experts.length);
+        } else {
+            console.warn('⚠️ ExpertSystem未正确初始化，使用备用数据');
+            // 备用数据 - 确保页面正常显示
+            defaultExperts = this.getDefaultExpertsBackup();
+            experts = defaultExperts;
+        }
+        
+        console.log('📋 默认专家数量:', defaultExperts.length);
+        console.log('👤 自定义专家数量:', customExperts.length);
 
         return `
             <div class="space-y-6">
@@ -446,7 +464,7 @@ window.ConfigSystem = {
                         ${defaultExperts.map(expert => `
                             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div class="flex items-center space-x-3">
-                                    <div class="expert-avatar" style="background: ${window.ExpertSystem?.getExpertAvatarColor(expert.id) || '#1890ff'}">
+                                    <div class="expert-avatar" style="background: ${this.getExpertAvatarColor(expert.id)}">
                                         ${expert.avatar}
                                     </div>
                                     <div>
@@ -634,6 +652,96 @@ window.ConfigSystem = {
                 </div>
             </div>
         `;
+    },
+
+    // 获取默认专家备用数据
+    getDefaultExpertsBackup() {
+        return [
+            {
+                id: 'requirements_analyst',
+                name: '需求分析师',
+                avatar: '需',
+                description: '专门负责解析和理解用户的测试需求，将抽象需求转化为具体的测试目标',
+                expertise: ['需求分析', '业务理解', '用户体验', '功能规格'],
+                priority: 1,
+                isDefault: true
+            },
+            {
+                id: 'test_strategist',
+                name: '测试策略师',
+                avatar: '策',
+                description: '负责设计整体测试策略和测试方案，确保测试覆盖度和有效性',
+                expertise: ['测试策略', '测试计划', '测试架构', '质量保证'],
+                priority: 2,
+                isDefault: true
+            },
+            {
+                id: 'tech_advisor',
+                name: '技术选型师',
+                avatar: '技',
+                description: '推荐合适的测试工具和技术栈，设计自动化测试架构',
+                expertise: ['测试工具', '自动化框架', '技术架构', '工具链'],
+                priority: 3,
+                isDefault: true
+            },
+            {
+                id: 'risk_controller',
+                name: '风险控制师',
+                avatar: '险',
+                description: '识别测试过程中的各种风险和潜在问题，提出预防和控制措施',
+                expertise: ['风险识别', '质量控制', '问题预防', '安全测试'],
+                priority: 4,
+                isDefault: true
+            },
+            {
+                id: 'case_researcher',
+                name: '案例研究员',
+                avatar: '例',
+                description: '研究行业最佳实践和成功案例，为项目提供经验参考',
+                expertise: ['最佳实践', '行业案例', '经验总结', '标准规范'],
+                priority: 5,
+                isDefault: true
+            },
+            {
+                id: 'efficiency_advisor',
+                name: '效率优化师',
+                avatar: '效',
+                description: '专注于测试流程优化和效率提升，推荐最佳实践和工具',
+                expertise: ['测试效率', '资源优化', '流程改进', '工具选型'],
+                priority: 6,
+                isDefault: true
+            },
+            {
+                id: 'solution_integrator',
+                name: '方案整合师',
+                avatar: '合',
+                description: '整合各专家的建议，输出完整的测试方案报告',
+                expertise: ['方案整合', '文档编写', '流程设计', '团队协调'],
+                priority: 7,
+                isDefault: true
+            }
+        ];
+    },
+
+    // 获取专家头像颜色
+    getExpertAvatarColor(expertId) {
+        // 优先使用ExpertSystem的方法
+        if (window.ExpertSystem && typeof window.ExpertSystem.getExpertAvatarColor === 'function') {
+            return window.ExpertSystem.getExpertAvatarColor(expertId);
+        }
+        
+        // 备用颜色方案
+        const colorMap = {
+            'requirements_analyst': '#1890ff',  // 蓝色
+            'test_strategist': '#52c41a',       // 绿色  
+            'tech_advisor': '#fa8c16',          // 橙色
+            'risk_controller': '#f5222d',       // 红色
+            'case_researcher': '#722ed1',       // 紫色
+            'efficiency_advisor': '#13c2c2',    // 青色
+            'solution_integrator': '#eb2f96'    // 品红色
+        };
+        
+        return colorMap[expertId] || '#1890ff';
     },
 
     // 绑定标签页事件
@@ -1824,12 +1932,29 @@ ${testResults.join('\n')}
                     </div>
                     
                     <div class="flex space-x-3">
-                        <button id="viewSecurityLogsBtn" class="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all">
+                        <button id="viewSecurityLogsBtn" class="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all"
+                                onclick="ConfigSystem.toggleSecurityLogsDisplay()">
                             <i class="fas fa-file-alt mr-2"></i>查看安全日志
                         </button>
                         <button id="clearSecurityLogsBtn" class="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all">
                             <i class="fas fa-trash mr-2"></i>清空日志
                         </button>
+                    </div>
+                    
+                    <!-- 安全日志显示区域 -->
+                    <div id="securityLogsSection" class="hidden mt-4 border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h5 class="font-medium text-gray-800">
+                                <i class="fas fa-history mr-2"></i>安全事件记录
+                            </h5>
+                            <button onclick="ConfigSystem.refreshSecurityLogs()" 
+                                    class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">
+                                <i class="fas fa-sync-alt mr-1"></i>刷新
+                            </button>
+                        </div>
+                        <div id="securityLogsContainer" class="max-h-60 overflow-y-auto">
+                            ${this.renderSecurityLogs()}
+                        </div>
                     </div>
                     
                     <div class="flex space-x-3">
@@ -1851,10 +1976,184 @@ ${testResults.join('\n')}
                         <li>• 安全等级越高，防护越严格，但可能影响正常使用</li>
                         <li>• 测试防护功能可以验证当前配置的有效性</li>
                         <li>• 如遇到API连接或递归错误，可尝试重置安全系统</li>
+                        <li>• <strong>控制台信息泄露</strong>：AI拒绝提供系统信息是正常安全响应，非真正泄露</li>
                     </ul>
                 </div>
             </div>
         `;
+    },
+
+    // 渲染安全日志
+    renderSecurityLogs() {
+        if (!window.SecuritySystem) {
+            return '<p class="text-gray-500 text-sm">安全系统未加载</p>';
+        }
+
+        const logs = window.SecuritySystem.getSecurityLogs();
+        
+        if (logs.length === 0) {
+            return '<p class="text-gray-500 text-sm">暂无安全事件记录</p>';
+        }
+
+        // 按时间倒序排序，只显示最近10条
+        const recentLogs = logs.slice(-10).reverse();
+        
+        let html = '<div class="space-y-2">';
+        
+        recentLogs.forEach(log => {
+            const time = new Date(log.timestamp).toLocaleString();
+            const severityClass = log.severity === 'high' ? 'border-red-300 bg-red-50' : 
+                                 log.severity === 'medium' ? 'border-yellow-300 bg-yellow-50' : 
+                                 'border-blue-300 bg-blue-50';
+            const severityIcon = log.severity === 'high' ? 'exclamation-triangle text-red-600' : 
+                                log.severity === 'medium' ? 'exclamation-circle text-yellow-600' : 
+                                'info-circle text-blue-600';
+            
+            html += `
+                <div class="border ${severityClass} rounded-lg p-3 ${log.falsePositive ? 'opacity-60' : ''}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start space-x-2 flex-1">
+                            <i class="fas fa-${severityIcon} mt-0.5"></i>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-medium text-sm">${log.event}</span>
+                                    ${log.falsePositive ? '<span class="text-xs bg-gray-200 text-gray-600 px-1 rounded">误报</span>' : ''}
+                                </div>
+                                <p class="text-xs text-gray-600 mt-1">${time}</p>
+                                ${log.details.output ? `<p class="text-xs text-gray-700 mt-1 truncate">${log.details.output}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex space-x-1 ml-2">
+                            ${!log.falsePositive ? `
+                                <button onclick="ConfigSystem.markEventAsFalsePositive('${log.id}')" 
+                                        class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200"
+                                        title="标记为误报">
+                                    误报
+                                </button>
+                            ` : ''}
+                            <button onclick="ConfigSystem.showEventDetails('${log.id}')" 
+                                    class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200"
+                                    title="查看详情">
+                                详情
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        
+        if (logs.length > 10) {
+            html += `<p class="text-xs text-gray-500 mt-2 text-center">显示最近 10 条记录，共 ${logs.length} 条</p>`;
+        }
+        
+        return html;
+    },
+
+    // 切换安全日志显示
+    toggleSecurityLogsDisplay() {
+        const section = document.getElementById('securityLogsSection');
+        const button = document.getElementById('viewSecurityLogsBtn');
+        
+        if (section && button) {
+            if (section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+                button.innerHTML = '<i class="fas fa-eye-slash mr-2"></i>隐藏日志';
+                this.refreshSecurityLogs(); // 刷新日志内容
+            } else {
+                section.classList.add('hidden');
+                button.innerHTML = '<i class="fas fa-file-alt mr-2"></i>查看安全日志';
+            }
+        }
+    },
+
+    // 刷新安全日志显示
+    refreshSecurityLogs() {
+        const container = document.getElementById('securityLogsContainer');
+        if (container) {
+            container.innerHTML = this.renderSecurityLogs();
+        }
+    },
+
+    // 标记事件为误报
+    markEventAsFalsePositive(eventId) {
+        if (window.SecuritySystem && window.SecuritySystem.markAsFalsePositive(eventId)) {
+            this.refreshSecurityLogs();
+            window.App?.showNotification?.('事件已标记为误报', 'success');
+        }
+    },
+
+    // 显示事件详情
+    showEventDetails(eventId) {
+        if (!window.SecuritySystem) return;
+        
+        const logs = window.SecuritySystem.getSecurityLogs();
+        const event = logs.find(log => log.id === eventId);
+        
+        if (!event) return;
+
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">安全事件详情</h3>
+                        <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                                class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">事件类型：</label>
+                            <span class="text-sm text-gray-900">${event.event}</span>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">发生时间：</label>
+                            <span class="text-sm text-gray-900">${new Date(event.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">严重性：</label>
+                            <span class="text-sm text-gray-900">${event.severity === 'high' ? '高危' : event.severity === 'medium' ? '中危' : '低危'}</span>
+                        </div>
+                        ${event.details.output ? `
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">检测内容：</label>
+                            <div class="text-sm text-gray-900 bg-gray-50 p-2 rounded mt-1 max-h-32 overflow-y-auto">${event.details.output}</div>
+                        </div>
+                        ` : ''}
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">用户代理：</label>
+                            <span class="text-xs text-gray-600 break-all">${event.userAgent}</span>
+                        </div>
+                        ${event.falsePositive ? `
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">误报标记：</label>
+                            <span class="text-sm text-gray-900">已标记为误报 (${new Date(event.markedAt).toLocaleString()})</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="mt-6 flex justify-end space-x-3">
+                        ${!event.falsePositive ? `
+                        <button onclick="ConfigSystem.markEventAsFalsePositive('${event.id}'); this.parentElement.parentElement.parentElement.parentElement.remove();" 
+                                class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                            标记为误报
+                        </button>
+                        ` : ''}
+                        <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                            关闭
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
     },
 
     // 获取当前配置

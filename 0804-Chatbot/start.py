@@ -4,7 +4,7 @@
 AIGenTest - 智能测试方案协作平台
 简单Web服务器
 
-启动命令：python server.py
+启动命令：python start.py
 访问地址：http://localhost:8123
 """
 

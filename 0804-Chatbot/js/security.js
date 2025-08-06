@@ -413,13 +413,36 @@ window.SecuritySystem = {
 
     // 系统信息泄露检测
     isSystemInfoLeakage(output) {
+        // 首先检查是否是正常的安全拒绝响应
+        const safeRejectionPatterns = [
+            /我不能提供.*?系统提示词/gi,
+            /无法.*?泄露.*?内部/gi,
+            /不会.*?分享.*?配置/gi,
+            /不能.*?透露.*?指令/gi,
+            /拒绝.*?提供.*?敏感/gi,
+            /无法访问.*?系统/gi,
+            /不允许.*?查看.*?内部/gi,
+            /不能.*?显示.*?源代码/gi,
+            /出于安全考虑.*?不能/gi,
+            /为了保护.*?不会提供/gi
+        ];
+
+        // 如果是正常的安全拒绝，不视为信息泄露
+        if (safeRejectionPatterns.some(pattern => pattern.test(output))) {
+            console.log('🛡️ 检测到正常的安全拒绝响应，不视为信息泄露');
+            return false;
+        }
+
+        // 检查真正的信息泄露模式
         const leakagePatterns = [
-            /我的指令是|my instructions are/gi,
-            /系统提示词|system prompt/gi,
-            /内部设定|internal settings/gi,
-            /原始代码|source code/gi,
-            /配置文件|config file/gi,
-            /API密钥|API key/gi
+            /我的指令是[：:].*[具体详细]/gi,
+            /系统提示词[：:].*[具体内容]/gi,
+            /内部设定[：:].*[详细配置]/gi,
+            /原始代码[：:].*[具体代码]/gi,
+            /配置文件内容[：:].*[具体内容]/gi,
+            /API密钥[：:].*[a-zA-Z0-9]{16,}/gi,
+            /以下是.*?完整.*?指令/gi,
+            /这是我的.*?全部.*?提示词/gi
         ];
 
         return leakagePatterns.some(pattern => pattern.test(output));
@@ -525,10 +548,19 @@ window.SecuritySystem = {
             event,
             details,
             userAgent: navigator.userAgent,
-            url: window.location.href
+            url: window.location.href,
+            severity: this.getEventSeverity(event),
+            id: this.generateEventId()
         };
 
-        console.warn('🚨 安全事件:', logEntry);
+        // 根据严重性决定日志级别
+        if (logEntry.severity === 'high') {
+            console.error('🚨 高危安全事件:', logEntry);
+        } else if (logEntry.severity === 'medium') {
+            console.warn('⚠️ 中危安全事件:', logEntry);
+        } else {
+            console.info('ℹ️ 安全提醒:', logEntry);
+        }
 
         // 保存到本地存储
         try {
@@ -544,6 +576,40 @@ window.SecuritySystem = {
         } catch (error) {
             console.error('❌ 安全日志保存失败:', error);
         }
+    },
+
+    // 获取事件严重性
+    getEventSeverity(event) {
+        const highRiskEvents = ['系统信息泄露', '权限提升攻击', 'API密钥泄露'];
+        const mediumRiskEvents = ['越狱提示词', '角色操控攻击', '系统指令注入'];
+        
+        if (highRiskEvents.includes(event)) return 'high';
+        if (mediumRiskEvents.includes(event)) return 'medium';
+        return 'low';
+    },
+
+    // 生成事件ID
+    generateEventId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    },
+
+    // 标记误报事件
+    markAsFalsePositive(eventId) {
+        try {
+            const logs = JSON.parse(localStorage.getItem('aigent_security_logs') || '[]');
+            const event = logs.find(log => log.id === eventId);
+            
+            if (event) {
+                event.falsePositive = true;
+                event.markedAt = new Date().toISOString();
+                localStorage.setItem('aigent_security_logs', JSON.stringify(logs));
+                console.log('✅ 事件已标记为误报:', eventId);
+                return true;
+            }
+        } catch (error) {
+            console.error('❌ 标记误报失败:', error);
+        }
+        return false;
     },
 
     // 获取安全日志
