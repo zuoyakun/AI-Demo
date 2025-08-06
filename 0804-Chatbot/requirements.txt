@@ -1,1 +1,26 @@
-flask
+# AIGenTest - 智能测试方案协作平台
+# Python 依赖包列表
+
+# Web 框架
+Flask==2.3.3
+
+# WSGI HTTP Server (生产环境推荐)
+gunicorn==21.2.0
+
+# 跨域资源共享支持 (如果需要API调用)
+Flask-CORS==4.0.0
+
+# HTTP 请求库 (如果后端需要调用外部API)
+requests==2.31.0
+
+# JSON Web Token 支持 (如果需要用户认证)
+PyJWT==2.8.0
+
+# 安全增强
+Werkzeug==2.3.7
+
+# 配置管理
+python-dotenv==1.0.0
+
+# 开发工具
+flask-debugtoolbar==0.13.1
